@@ -1,0 +1,22 @@
+# Nuxt
+.nuxt
+.output
+.data
+.env
+dist
+
+# Node
+node_modules
+*.log*
+.DS_Store
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Turbo
+.turbo
+
+CLAUDE.md

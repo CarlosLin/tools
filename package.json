@@ -1,0 +1,25 @@
+{
+  "name": "match-program",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo for feature modules playground",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.12.3",
+  "devDependencies": {
+    "turbo": "^2.5.8"
+  },
+  "pnpm": {
+    "overrides": {
+      "undici": "^6.20.1",
+      "vite": "6.0.11"
+    }
+  }
+}
