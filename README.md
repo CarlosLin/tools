@@ -61,11 +61,6 @@ pnpm build       # 生產構建
 pnpm lint        # ESLint 檢查
 pnpm type-check  # TypeScript 檢查
 ```
-
-## 📝 開發規範
-
-### ⚠️ 重要：請先閱讀 [CLAUDE.md](./CLAUDE.md)
-
 ### 核心原則
 
 1. **使用 TSX，不使用 template**
@@ -112,15 +107,6 @@ nvm use 22
 # 或
 fnm use 22
 ```
-
-## 🔗 相關連結
-
-- [開發規範 (CLAUDE.md)](./CLAUDE.md) 📋
-- [Nuxt 3 文檔](https://nuxt.com/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [shadcn-vue](https://www.shadcn-vue.com/)
-
----
 
 **專案狀態**: 🟢 開發中
 **最後更新**: 2025-10-14
