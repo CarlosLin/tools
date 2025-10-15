@@ -1,5 +1,6 @@
 import { defineComponent } from 'vue'
 import { NuxtLink } from '#components'
+import { useHead } from '@unhead/vue'
 
 interface Feature {
   name: string
@@ -10,6 +11,15 @@ interface Feature {
 export default defineComponent({
   name: 'HomePage',
   setup() {
+    useHead({
+      title: '小工具',
+      meta: [
+        {
+          name: 'description',
+          content: '各種工具',
+        },
+      ],
+    })
     const features: Feature[] = [
       {
         name: 'Input Validation',
