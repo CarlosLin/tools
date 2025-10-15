@@ -1,6 +1,5 @@
 import { defineComponent } from 'vue'
 import { NuxtLink } from '#components'
-import { useHead } from '@unhead/vue'
 
 interface Feature {
   name: string

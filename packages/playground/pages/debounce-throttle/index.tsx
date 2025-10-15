@@ -1,6 +1,4 @@
 import { defineComponent, ref, watch, onUnmounted } from "vue";
-import { useRouter } from "vue-router";
-import { useHead } from "@unhead/vue";
 import { useDebounce } from "./hooks/useDebounce";
 import { useDebouncedFn } from "./hooks/useDebounce";
 import { useThrottledFn } from "./hooks/useThrottle";
@@ -14,6 +12,8 @@ import type { SearchResult, ApiCallLog } from "./types";
 export default defineComponent({
   name: "DebounceThrottle",
   setup() {
+    const router = useRouter();
+
     useHead({
       title: "防抖與節流小工具",
       meta: [
@@ -24,7 +24,6 @@ export default defineComponent({
         },
       ],
     });
-    const router = useRouter();
 
     // Search demo state
     const searchQuery = ref("");

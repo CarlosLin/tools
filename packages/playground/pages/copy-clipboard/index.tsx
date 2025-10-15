@@ -1,6 +1,4 @@
 import { defineComponent, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useHead } from '@unhead/vue'
 import { useCopyToClipboard } from './hooks/useCopyToClipboard'
 import { CopyButton } from './components/CopyButton'
 import { CodeCard } from './components/CodeCard'
@@ -9,6 +7,8 @@ import { CODE_SNIPPETS } from './constants'
 export default defineComponent({
   name: 'CopyToClipboard',
   setup() {
+    const router = useRouter()
+
     useHead({
       title: '剪貼簿複製工具',
       meta: [
@@ -18,8 +18,6 @@ export default defineComponent({
         },
       ],
     })
-
-    const router = useRouter()
 
     // 基礎文字複製
     const basicText = ref('Hello, World! 這是一段測試文字。')
