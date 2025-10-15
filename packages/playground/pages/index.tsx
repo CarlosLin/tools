@@ -61,6 +61,11 @@ export default defineComponent({
         description: '骨架屏 - 加載狀態優化、佔位符',
       },
       {
+        name: 'Image Lazy Loading',
+        path: '/image-lazy-loading',
+        description: '圖片懶加載 - Intersection Observer、性能優化',
+      },
+      {
         name: 'Copy to Clipboard',
         path: '/copy-clipboard',
         description: '剪貼簿 - 一鍵複製、代碼複製',
