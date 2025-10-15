@@ -1,0 +1,873 @@
+/**
+ * Modal & Dialog Demo Page
+ * 展示各種彈窗功能
+ */
+
+import { defineComponent } from "vue";
+import { useDialog } from "./hooks/useDialog";
+import DialogContainer from "./components/DialogContainer";
+import type { FormField } from "./types";
+
+export default defineComponent({
+  name: "ModalDialogPage",
+  setup() {
+    const router = useRouter();
+    useHead({
+      title: "Modal & Dialog - Match Program",
+      meta: [
+        {
+          name: "description",
+          content: "彈窗管理 - 確認框、表單彈窗、圖片燈箱",
+        },
+      ],
+    });
+
+    // 使用 useDialog hook
+    const dialog = useDialog();
+
+    // Form fields configuration
+    const formFields: FormField[] = [
+      {
+        name: "username",
+        label: "用戶名",
+        type: "text",
+        placeholder: "請輸入用戶名",
+        required: true,
+        validation: (value) => {
+          if (value.length < 3) {
+            return "用戶名至少需要 3 個字符";
+          }
+        },
+      },
+      {
+        name: "email",
+        label: "電子郵件",
+        type: "email",
+        placeholder: "example@email.com",
+        required: true,
+        validation: (value) => {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(value)) {
+            return "請輸入有效的電子郵件";
+          }
+        },
+      },
+      {
+        name: "role",
+        label: "角色",
+        type: "select",
+        required: true,
+        options: [
+          { label: "管理員", value: "admin" },
+          { label: "編輯", value: "editor" },
+          { label: "訪客", value: "viewer" },
+        ],
+      },
+      {
+        name: "bio",
+        label: "個人簡介",
+        type: "textarea",
+        placeholder: "介紹一下自己...",
+      },
+    ];
+
+    // Sample images for lightbox
+    const sampleImages = [
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800",
+      "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800",
+      "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800",
+      "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800",
+    ];
+
+    // Handlers
+    const handleConfirm = async () => {
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          console.log("Confirmed!");
+          resolve();
+        }, 1000);
+      });
+    };
+
+    const handleFormSubmit = async (data: Record<string, any>) => {
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          console.log("Form submitted:", data);
+          resolve();
+        }, 1000);
+      });
+    };
+
+    // Dialog 處理函數
+    const showConfirm = () => {
+      dialog.confirm({
+        title: "確認操作",
+        description: "您確定要執行此操作嗎？",
+        variant: "default",
+        onConfirm: handleConfirm,
+      });
+    };
+
+    const showDanger = () => {
+      dialog.confirm({
+        title: "危險操作",
+        description: "此操作將永久刪除數據，且無法恢復。",
+        variant: "danger",
+        confirmText: "確認刪除",
+        onConfirm: handleConfirm,
+      });
+    };
+
+    const showSuccess = () => {
+      dialog.confirm({
+        title: "操作成功",
+        description: "您的操作已成功完成！",
+        variant: "success",
+        confirmText: "好的",
+        onConfirm: async () => {
+          console.log("Success confirmed!");
+        },
+      });
+    };
+
+    const showForm = () => {
+      dialog.form({
+        title: "用戶資料表單",
+        fields: formFields,
+        onSubmit: handleFormSubmit,
+      });
+    };
+
+    const showLightbox = () => {
+      dialog.lightbox({
+        images: sampleImages,
+        currentIndex: 0,
+      });
+    };
+
+    // 🆕 巢狀 Dialog 測試：Dialog A -> Dialog B
+    const showNestedDialog = () => {
+      dialog.form({
+        title: "步驟 1：填寫基本資料",
+        description: "請填寫您的基本資料，提交前會要求確認",
+        fields: [
+          {
+            name: "name",
+            label: "姓名",
+            type: "text",
+            required: true,
+            placeholder: "請輸入姓名",
+          },
+          {
+            name: "age",
+            label: "年齡",
+            type: "number",
+            required: true,
+            placeholder: "請輸入年齡",
+          },
+        ],
+        submitText: "下一步：確認資料",
+        onSubmit: async (data) => {
+          // 不關閉 Dialog A，而是彈出 Dialog B 確認
+          return new Promise<void>((resolve, reject) => {
+            dialog.confirm({
+              title: "步驟 2：確認提交",
+              description: `確認提交以下資料嗎？\n\n姓名：${data.name}\n年齡：${data.age}`,
+              variant: "default",
+              confirmText: "確認提交",
+              cancelText: "返回修改",
+              onConfirm: async () => {
+                // 模擬提交
+                await new Promise((r) => setTimeout(r, 1000));
+                console.log("資料已提交：", data);
+                // Dialog B 會自動關閉，並關閉 Dialog A
+                resolve();
+              },
+              onCancel: () => {
+                // 取消時 reject Promise，讓 Dialog A 重置 loading 狀態
+                console.log("取消提交，返回表單");
+                reject(new Error("User cancelled"));
+              },
+            });
+          });
+        },
+      });
+    };
+
+    // 🚀 Workflow 示範：使用 State Machine 管理複雜流程
+    const showWorkflowDemo = () => {
+      const workflow = dialog.createWorkflow({
+        states: {
+          // 步驟 1：填寫基本資料
+          fillBasicInfo: {
+            type: "form",
+            title: "步驟 1：填寫基本資料",
+            description: "請輸入您的個人資料",
+            fields: [
+              {
+                name: "name",
+                label: "姓名",
+                type: "text",
+                required: true,
+                placeholder: "請輸入姓名",
+              },
+              {
+                name: "email",
+                label: "電子郵件",
+                type: "email",
+                required: true,
+                placeholder: "example@email.com",
+              },
+            ],
+            actions: {
+              取消: {
+                exit: true,
+                variant: "default",
+                skipValidation: true, // 取消按鈕不需要驗證
+              },
+              下一步: {
+                next: "confirmInfo",
+                variant: "success",
+                action: async (data, ctx) => {
+                  console.log("✅ [步驟 1] 基本資料已填寫:", data);
+                },
+              },
+            },
+          },
+
+          // 步驟 2：確認資料（支援 3 個按鈕）
+          confirmInfo: {
+            type: "confirm",
+            title: (ctx) => `步驟 2：確認資料`,
+            description: (ctx) =>
+              `請確認以下資料：\n\n姓名：${ctx.name || "未填寫"}\n電子郵件：${ctx.email || "未填寫"}\n\n如需修改個人簡介，請點擊「編輯簡介」`,
+            actions: {
+              取消: {
+                exit: true,
+                variant: "default",
+              },
+              編輯簡介: {
+                next: "editProfile",
+                variant: "default",
+              },
+              確認送出: {
+                action: async (ctx) => {
+                  // 模擬提交
+                  await new Promise((r) => setTimeout(r, 1000));
+                  console.log("✅ 工作流程完成！最終資料：", ctx);
+                },
+                exit: true,
+                variant: "success",
+              },
+            },
+          },
+
+          // 步驟 3：編輯個人簡介（可選步驟）
+          editProfile: {
+            type: "form",
+            title: "步驟 3：編輯個人簡介",
+            description: "補充您的個人簡介資訊",
+            fields: [
+              {
+                name: "bio",
+                label: "個人簡介",
+                type: "textarea",
+                placeholder: "介紹一下自己...",
+              },
+              {
+                name: "website",
+                label: "個人網站",
+                type: "text",
+                placeholder: "https://...",
+              },
+            ],
+            actions: {
+              取消: {
+                next: "confirmInfo",
+                variant: "default",
+                skipValidation: true, // 取消按鈕不需要驗證
+                action: async (data, ctx) => {
+                  // 可以記錄用戶行為、發送分析事件等
+                  console.log("📊 [步驟 3] 已記錄取消事件");
+                },
+              },
+              儲存草稿: {
+                next: "confirmInfo",
+                variant: "default",
+                skipValidation: true, // 草稿可以不完整，不需要驗證
+                action: async (data, ctx) => {
+                  console.log("💾 [步驟 3] 草稿資料:", data);
+                  await new Promise((r) => setTimeout(r, 500));
+                  console.log("✅ [步驟 3] 草稿已保存");
+                },
+              },
+              確認送出: {
+                next: "confirmInfo",
+                variant: "success",
+                // 確認送出需要驗證，不設定 skipValidation
+                action: async (data, ctx) => {
+                  console.log("📝 [步驟 3] 提交的資料:", data);
+                  console.log("📝 [步驟 3] 當前完整 context:", ctx);
+                  // 模擬 API 調用
+                  await new Promise((r) => setTimeout(r, 500));
+                  console.log("✅ [步驟 3] 已提交");
+                },
+              },
+            },
+          },
+        },
+        start: "fillBasicInfo",
+        onComplete: (ctx) => {
+          console.log("🎉 Workflow 成功完成！", ctx);
+          dialog.confirm({
+            title: "提交成功",
+            description: "您的資料已成功提交！",
+            variant: "success",
+            confirmText: "好的",
+            onConfirm: () => {},
+          });
+        },
+        onCancel: (ctx) => {
+          console.log("❌ Workflow 已取消", ctx);
+        },
+      });
+
+      // 啟動 workflow
+      workflow.start();
+    };
+
+    return () => (
+      <div class="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-slate-900 text-white">
+        <div class="container mx-auto px-4 py-16">
+          {/* Back Button */}
+          <button
+            onClick={() => router.push("/")}
+            class="mb-8 flex items-center gap-2 text-slate-400 hover:text-white transition-colors group"
+          >
+            <svg
+              class="w-5 h-5 transform group-hover:-translate-x-1 transition-transform"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
+            </svg>
+            <span class="font-medium">返回首頁</span>
+          </button>
+          {/* Header */}
+          <div class="mb-12">
+            <h1 class="text-5xl font-bold mb-4">Modal & Dialog</h1>
+            <p class="text-xl text-slate-300">
+              彈窗管理 - 確認框、表單彈窗、圖片燈箱
+            </p>
+          </div>
+
+          {/* 演示區 */}
+          <div class="mb-12 bg-gradient-to-r from-purple-900/30 to-blue-900/30 backdrop-blur-sm rounded-lg p-8 border-2 border-purple-500/50">
+            <div class="mb-6">
+              <h2 class="text-3xl font-bold mb-2">功能演示</h2>
+              <p class="text-slate-300 text-lg mb-2">
+                使用 useDialog Hook，無需 import 組件
+              </p>
+              <div class="bg-slate-900/50 rounded-md p-4 font-mono text-sm text-purple-300">
+                <div>const dialog = useDialog()</div>
+                <div>
+                  dialog.confirm(&#123; title: '...', onConfirm: ... &#125;)
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <button
+                onClick={showConfirm}
+                class="px-6 py-4 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors font-semibold"
+              >
+                確認對話框
+              </button>
+              <button
+                onClick={showDanger}
+                class="px-6 py-4 bg-red-600 hover:bg-red-700 rounded-lg transition-colors font-semibold"
+              >
+                危險操作
+              </button>
+              <button
+                onClick={showSuccess}
+                class="px-6 py-4 bg-green-600 hover:bg-green-700 rounded-lg transition-colors font-semibold"
+              >
+                成功提示
+              </button>
+              <button
+                onClick={showForm}
+                class="px-6 py-4 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors font-semibold"
+              >
+                表單彈窗
+              </button>
+              <button
+                onClick={showLightbox}
+                class="px-6 py-4 bg-pink-600 hover:bg-pink-700 rounded-lg transition-colors font-semibold"
+              >
+                圖片燈箱
+              </button>
+              <button
+                onClick={showNestedDialog}
+                class="px-6 py-4 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors font-semibold"
+              >
+                🔗 巢狀 Dialog
+              </button>
+              <button
+                onClick={showWorkflowDemo}
+                class="px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg transition-colors font-semibold"
+              >
+                🚀 Workflow 示範
+              </button>
+              <button
+                onClick={dialog.closeAll}
+                class="px-6 py-4 bg-slate-600 hover:bg-slate-700 rounded-lg transition-colors font-semibold"
+              >
+                🗑️ 關閉所有
+              </button>
+            </div>
+
+            {/* 巢狀 Dialog 說明 */}
+            <div class="mt-6 p-4 bg-indigo-900/30 border border-indigo-500/30 rounded-lg">
+              <h3 class="text-lg font-semibold text-indigo-300 mb-2">
+                🔗 巢狀 Dialog 測試
+              </h3>
+              <p class="text-sm text-slate-300">
+                點擊「巢狀 Dialog」測試多層對話框場景：
+              </p>
+              <ul class="mt-2 space-y-1 text-sm text-slate-400">
+                <li>• Dialog A：填寫表單</li>
+                <li>• 點擊「下一步」→ Dialog B：確認資料</li>
+                <li>• Dialog B 點擊「確認」→ 兩個都關閉</li>
+                <li>• Dialog B 點擊「返回」→ 只關閉 B，A 保留</li>
+              </ul>
+            </div>
+
+            {/* Workflow 說明 */}
+            <div class="mt-6 p-4 bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-2 border-purple-500/50 rounded-lg">
+              <h3 class="text-lg font-semibold text-purple-300 mb-2">
+                🚀 Workflow State Machine（推薦用於複雜流程）
+              </h3>
+              <p class="text-sm text-slate-300 mb-2">
+                使用宣告式 State Machine 管理多步驟流程，清晰易維護：
+              </p>
+              <ul class="mt-2 space-y-1 text-sm text-slate-400">
+                <li>• 步驟 1：填寫基本資料</li>
+                <li>
+                  • 步驟 2：確認資料（3 個按鈕：取消 / 編輯簡介 / 確認送出）
+                </li>
+                <li>• 步驟 3（可選）：編輯個人簡介 → 回到步驟 2</li>
+                <li>• 自動管理 context，狀態清晰可見</li>
+              </ul>
+              <div class="mt-3 px-3 py-2 bg-purple-500/10 rounded border border-purple-500/30">
+                <p class="text-xs text-purple-300">
+                  💡 適用於：註冊流程、設定嚮導、多步驟表單等複雜場景
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 🔄 舊方式演示區 */}
+          <div class="mb-12">
+            <div class="mb-6">
+              <h2 class="text-3xl font-bold mb-2 flex items-center gap-3">
+                <span class="text-blue-400">🔄</span>
+                舊方式：useModal + Import 組件（向後兼容）
+              </h2>
+              <p class="text-slate-400 text-lg">
+                需要 import 組件並在 JSX 中渲染
+              </p>
+            </div>
+
+            {/* Demo Grid */}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Basic Modal */}
+              <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+                <h3 class="text-xl font-semibold mb-2">基礎 Modal</h3>
+                <p class="text-slate-400 mb-4">
+                  簡單的彈窗,包含標題、內容和關閉按鈕
+                </p>
+                <button
+                  onClick={basicModal.open}
+                  class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                >
+                  打開基礎 Modal
+                </button>
+              </div>
+
+              {/* Confirm Modal - Default */}
+              <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+                <h3 class="text-xl font-semibold mb-2">確認對話框</h3>
+                <p class="text-slate-400 mb-4">
+                  需要用戶確認的操作,支援異步處理
+                </p>
+                <button
+                  onClick={confirmModal.open}
+                  class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                >
+                  打開確認框
+                </button>
+              </div>
+
+              {/* Confirm Modal - Danger */}
+              <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+                <h3 class="text-xl font-semibold mb-2">危險操作</h3>
+                <p class="text-slate-400 mb-4">警告用戶進行危險操作,如刪除</p>
+                <button
+                  onClick={dangerModal.open}
+                  class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                >
+                  刪除操作
+                </button>
+              </div>
+
+              {/* Confirm Modal - Success */}
+              <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+                <h3 class="text-xl font-semibold mb-2">成功提示</h3>
+                <p class="text-slate-400 mb-4">操作成功的確認提示</p>
+                <button
+                  onClick={successModal.open}
+                  class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 rounded-md transition-colors"
+                >
+                  顯示成功
+                </button>
+              </div>
+
+              {/* Form Modal */}
+              <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+                <h3 class="text-xl font-semibold mb-2">表單彈窗</h3>
+                <p class="text-slate-400 mb-4">
+                  收集用戶輸入,支援驗證和異步提交
+                </p>
+                <button
+                  onClick={formModal.open}
+                  class="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-md transition-colors"
+                >
+                  打開表單
+                </button>
+              </div>
+
+              {/* Lightbox */}
+              <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+                <h3 class="text-xl font-semibold mb-2">圖片燈箱</h3>
+                <p class="text-slate-400 mb-4">
+                  全屏展示圖片集,支援切換和縮略圖
+                </p>
+                <button
+                  onClick={lightboxModal.open}
+                  class="w-full px-4 py-2 bg-pink-600 hover:bg-pink-700 rounded-md transition-colors"
+                >
+                  查看圖片
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Features Section */}
+          <div class="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-slate-800/30 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+              <h3 class="text-2xl font-semibold mb-4">特色功能</h3>
+              <ul class="space-y-2 text-slate-300">
+                <li class="flex items-start">
+                  <span class="text-green-400 mr-2">✓</span>
+                  <span>使用 Teleport 實現彈窗渲染</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-green-400 mr-2">✓</span>
+                  <span>支援多種尺寸和變體</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-green-400 mr-2">✓</span>
+                  <span>完整的動畫過渡效果</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-green-400 mr-2">✓</span>
+                  <span>焦點陷阱和鍵盤導航</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-green-400 mr-2">✓</span>
+                  <span>表單驗證和異步處理</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="bg-slate-800/30 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+              <h3 class="text-2xl font-semibold mb-4">使用場景</h3>
+              <ul class="space-y-2 text-slate-300">
+                <li class="flex items-start">
+                  <span class="text-blue-400 mr-2">→</span>
+                  <span>需要用戶確認的關鍵操作</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-blue-400 mr-2">→</span>
+                  <span>快速收集用戶輸入</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-blue-400 mr-2">→</span>
+                  <span>展示詳細信息或警告</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-blue-400 mr-2">→</span>
+                  <span>圖片和媒體內容查看</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-blue-400 mr-2">→</span>
+                  <span>引導用戶完成多步驟流程</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Code Examples */}
+          <div class="mt-16 space-y-8">
+            {/* Workflow 範例 */}
+            <div class="bg-gradient-to-r from-purple-900/30 to-pink-900/30 backdrop-blur-sm rounded-lg p-6 border-2 border-purple-500/50">
+              <h3 class="text-2xl font-semibold mb-4 text-purple-300">
+                🚀 Workflow State Machine 範例（最佳解決方案）
+              </h3>
+              <pre class="bg-slate-900 p-4 rounded-md overflow-x-auto text-sm">
+                <code class="text-purple-300">{`const workflow = dialog.createWorkflow({
+  states: {
+    // 步驟 1：表單（支援多按鈕）
+    fillForm: {
+      type: 'form',
+      title: '填寫資料',
+      fields: [...],
+      actions: {
+        取消: { exit: true },
+        下一步: {
+          next: 'confirm',
+          action: async (data, ctx) => {
+            // data 是表單資料，ctx 是全局 context
+            console.log('表單資料:', data)
+          }
+        }
+      }
+    },
+
+    // 步驟 2：確認（支援多按鈕）
+    confirm: {
+      type: 'confirm',
+      title: (ctx) => \`確認：\${ctx.name}\`,
+      description: (ctx) => \`姓名：\${ctx.name}\\n郵件：\${ctx.email}\`,
+      actions: {
+        取消: { exit: true },
+        編輯簡介: { next: 'editProfile' }, // 跳到其他步驟
+        確認送出: {
+          action: async (ctx) => await submit(ctx),
+          exit: true
+        }
+      }
+    },
+
+    // 步驟 3：可選步驟（支援多按鈕）
+    editProfile: {
+      type: 'form',
+      fields: [...],
+      actions: {
+        取消: { next: 'confirm' },
+        儲存草稿: {
+          next: 'confirm',
+          action: async (data) => await saveDraft(data)
+        },
+        確認送出: {
+          next: 'confirm',
+          action: async (data) => await saveProfile(data)
+        }
+      }
+    }
+  },
+  start: 'fillForm',
+  onComplete: (ctx) => console.log('完成', ctx)
+})
+
+workflow.start() // 啟動流程`}</code>
+              </pre>
+              <p class="mt-4 text-sm text-purple-200">
+                ✨ 優點：宣告式定義、清晰易讀、自動管理
+                context、支援任意複雜流程
+              </p>
+            </div>
+
+            {/* 新方式範例 */}
+            <div class="bg-gradient-to-r from-green-900/30 to-emerald-900/30 backdrop-blur-sm rounded-lg p-6 border-2 border-green-500/50">
+              <h3 class="text-2xl font-semibold mb-4 text-green-400">
+                🆕 基礎使用範例
+              </h3>
+              <pre class="bg-slate-900 p-4 rounded-md overflow-x-auto text-sm">
+                <code class="text-green-400">{`import { useDialog } from './hooks/useDialog'
+
+const dialog = useDialog()
+
+// 確認對話框
+dialog.confirm({
+  title: '確認刪除',
+  description: '此操作無法撤銷',
+  variant: 'danger',
+  onConfirm: async () => {
+    await deleteItem()
+  }
+})
+
+// 表單對話框
+dialog.form({
+  title: '新增用戶',
+  fields: [...],
+  onSubmit: async (data) => {
+    await createUser(data)
+  }
+})
+
+// 巢狀 Dialog：A 中彈出 B
+dialog.form({
+  title: '步驟 1',
+  fields: [...],
+  onSubmit: async (data) => {
+    return new Promise((resolve, reject) => {
+      dialog.confirm({
+        title: '步驟 2：確認',
+        description: '確認提交嗎？',
+        onConfirm: async () => {
+          await submitData(data)
+          resolve() // 關閉 Dialog A
+        },
+        onCancel: () => {
+          // reject 讓 A 重置，但不關閉
+          reject(new Error('Cancelled'))
+        }
+      })
+    })
+  }
+})
+
+// 關閉所有
+dialog.closeAll()`}</code>
+              </pre>
+              <p class="mt-4 text-sm text-slate-300">
+                ✨ 優點：無需 import 組件，代碼更簡潔，統一管理
+              </p>
+            </div>
+
+            {/* 舊方式範例 */}
+            <div class="bg-slate-800/30 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+              <h3 class="text-2xl font-semibold mb-4 text-blue-400">
+                🔄 舊方式使用範例（向後兼容）
+              </h3>
+              <pre class="bg-slate-900 p-4 rounded-md overflow-x-auto text-sm">
+                <code class="text-blue-400">{`import { useModal } from './hooks/useModal'
+import ConfirmModal from './components/ConfirmModal'
+
+const modal = useModal()
+
+const handleDelete = async () => {
+  console.log('Deleted!')
+}
+
+// In JSX:
+<ConfirmModal
+  open={modal.isOpen.value}
+  onOpenChange={modal.close}
+  title="確認刪除"
+  description="此操作無法撤銷"
+  variant="danger"
+  onConfirm={handleDelete}
+/>`}</code>
+              </pre>
+              <p class="mt-4 text-sm text-slate-400">
+                ⚠️ 需要 import 組件並在 JSX 中渲染
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal Instances */}
+        <BaseModal
+          open={basicModal.isOpen.value}
+          onOpenChange={(open) => !open && basicModal.close()}
+          title="基礎 Modal 示例"
+          size="md"
+        >
+          {{
+            default: () => (
+              <div class="space-y-4">
+                <p class="text-slate-600 dark:text-slate-400">
+                  這是一個基礎的 Modal 組件。它包含標題、內容區域和關閉按鈕。
+                </p>
+                <p class="text-slate-600 dark:text-slate-400">
+                  點擊背景遮罩或右上角的關閉按鈕可以關閉彈窗。
+                </p>
+              </div>
+            ),
+            footer: () => (
+              <div class="flex justify-end">
+                <button
+                  onClick={basicModal.close}
+                  class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                >
+                  知道了
+                </button>
+              </div>
+            ),
+          }}
+        </BaseModal>
+
+        <ConfirmModal
+          open={confirmModal.isOpen.value}
+          onOpenChange={(open) => !open && confirmModal.close()}
+          title="確認操作"
+          description="您確定要執行此操作嗎?"
+          variant="default"
+          onConfirm={handleConfirm}
+        />
+
+        <ConfirmModal
+          open={dangerModal.isOpen.value}
+          onOpenChange={(open) => !open && dangerModal.close()}
+          title="危險操作"
+          description="此操作將永久刪除數據,且無法恢復。確定要繼續嗎?"
+          variant="danger"
+          confirmText="確認刪除"
+          onConfirm={handleConfirm}
+        />
+
+        <ConfirmModal
+          open={successModal.isOpen.value}
+          onOpenChange={(open) => !open && successModal.close()}
+          title="操作成功"
+          description="您的操作已成功完成!"
+          variant="success"
+          confirmText="好的"
+          onConfirm={() => successModal.close()}
+        />
+
+        <FormModal
+          open={formModal.isOpen.value}
+          onOpenChange={(open) => !open && formModal.close()}
+          title="用戶資料表單"
+          fields={formFields}
+          onSubmit={handleFormSubmit}
+        />
+
+        <LightboxModal
+          open={lightboxModal.isOpen.value}
+          onOpenChange={(open) => !open && lightboxModal.close()}
+          images={sampleImages}
+          currentIndex={currentImageIndex.value}
+          onIndexChange={(index) => (currentImageIndex.value = index)}
+        />
+
+        {/* 🆕 新方式：DialogContainer 統一管理 */}
+        <DialogContainer
+          dialogs={dialog.dialogs.value}
+          onClose={dialog.close}
+        />
+      </div>
+    );
+  },
+});
