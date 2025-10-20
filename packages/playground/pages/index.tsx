@@ -37,7 +37,13 @@ export default defineComponent({
         name: 'Infinite Scroll',
         path: '/infinite-scroll',
         description: '無限滾動 - 列表分頁載入、虛擬滾動',
-        isComplete: false,
+        isComplete: true,
+      },
+      {
+        name: 'Infinite Scroll V2',
+        path: '/infinite-scroll-2',
+        description: '無限滾動 V2 - 智慧預加載、平滑載入體驗',
+        isComplete: true,
       },
       {
         name: 'File Upload',
